@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Wave Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <style>
+    :root {
+      --bg0: #0d0f12;
+      --bg1: #181c21;
+      --bg2: #1c2026;
+      --bg3: #252b33;
+      --bd:  rgba(255,255,255,.1);
+      --tx:  #f0f4f8;
+      --tx2: #b8c4d0;
+      --tx3: #7d8a98;
+      --ac:  #9de5ff;
+      --ok:  #8aefb0;
+      --err: #ff9595;
+      --mono: 'JetBrains Mono', monospace;
+      --ui:   'Space Grotesk', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg0); color: var(--tx); font-family: var(--ui); overflow-x: hidden; }
+    button, input { font: inherit; }
+
+    /* Subtle grid background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(157,229,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(157,229,255,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Glowing orb behind card */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 30%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(157,229,255,.06) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 16px;
+      position: relative; z-index: 1;
+    }
+
+    /* ── Logo ── */
+    .logo {
+      text-align: center;
+      margin-bottom: 36px;
+      animation: fade-down .55s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes fade-down {
+      from { opacity: 0; transform: translateY(-18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .logo-wave {
+      font-family: var(--mono);
+      font-size: 62px; font-weight: 700; letter-spacing: .08em;
+      background: linear-gradient(135deg, var(--ac) 0%, #7dd4ff 40%, #60a5fa 70%, var(--ac) 100%);
+      background-size: 250% auto;
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: fade-down .55s cubic-bezier(.22,1,.36,1) both,
+                 shimmer 5s linear infinite;
+      filter: drop-shadow(0 0 28px rgba(157,229,255,.28));
+    }
+    @keyframes shimmer {
+      0%   { background-position: 0% center; }
+      100% { background-position: 250% center; }
+    }
+    .logo-sub {
+      font-family: var(--mono);
+      font-size: 11px; color: var(--tx3);
+      letter-spacing: .22em; text-transform: uppercase;
+      margin-top: 6px;
+      animation: fade-up .5s .1s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--bg1);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 22px;
+      width: 100%; max-width: 480px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
+      animation: card-in .55s .12s cubic-bezier(.34,1.4,.64,1) both;
+    }
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(28px) scale(.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Password Screen ── */
+    #passScreen {
+      padding: 44px 36px 40px;
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+    }
+    #passScreen.leaving {
+      animation: pass-leave .3s cubic-bezier(.4,0,.2,1) forwards;
+    }
+    @keyframes pass-leave {
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+
+    .lock-wrap {
+      position: relative;
+      width: 68px; height: 68px;
+    }
+    .lock-icon {
+      width: 68px; height: 68px; border-radius: 20px;
+      background: rgba(157,229,255,.07);
+      border: 1px solid rgba(157,229,255,.16);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 27px; color: var(--ac);
+      animation: lock-breathe 3.5s ease-in-out infinite;
+      position: relative; z-index: 1;
+    }
+    .lock-ring {
+      position: absolute; inset: -8px;
+      border-radius: 28px;
+      border: 1px solid rgba(157,229,255,.1);
+      animation: ring-pulse 3.5s ease-in-out infinite;
+    }
+    .lock-ring-2 {
+      position: absolute; inset: -16px;
+      border-radius: 36px;
+      border: 1px solid rgba(157,229,255,.05);
+      animation: ring-pulse 3.5s .3s ease-in-out infinite;
+    }
+    @keyframes lock-breathe {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(157,229,255,.15); }
+      50%       { box-shadow: 0 0 20px 4px rgba(157,229,255,.1); }
+    }
+    @keyframes ring-pulse {
+      0%, 100% { opacity: 0; transform: scale(.9); }
+      50%       { opacity: 1; transform: scale(1); }
+    }
+
+    .pass-title {
+      font-size: 21px; font-weight: 700; color: var(--tx);
+    }
+    .pass-hint {
+      font-size: 13px; color: var(--tx3); text-align: center;
+      line-height: 1.5; max-width: 280px;
+    }
+    .pass-row { width: 100%; display: flex; gap: 10px; }
+    .pass-input {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 13px; padding: 13px 16px;
+      color: var(--tx); font-family: var(--mono); font-size: 14px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .pass-input:focus {
+      border-color: rgba(157,229,255,.45);
+      box-shadow: 0 0 0 3px rgba(157,229,255,.08);
+    }
+    .pass-input.err {
+      border-color: var(--err);
+      animation: shake .4s ease;
+    }
+    .pass-btn {
+      width: 52px; height: 52px; border-radius: 13px; border: none; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--ac), #60a5fa);
+      color: #0d0f12; font-size: 16px;
+      cursor: pointer;
+      transition: opacity .15s, transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pass-btn:hover {
+      opacity: .92; transform: translateY(-2px) scale(1.06);
+      box-shadow: 0 8px 22px rgba(157,229,255,.28);
+    }
+    .pass-btn:active { transform: scale(.94); }
+    .pass-err {
+      font-size: 12px; color: var(--err); font-family: var(--ui);
+      height: 16px;
+      opacity: 0; transform: translateY(-4px);
+      transition: opacity .2s, transform .2s;
+    }
+    .pass-err.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Admin Panel ── */
+    #adminPanel { display: none; }
+    #adminPanel.visible {
+      display: block;
+      animation: panel-reveal .45s cubic-bezier(.22,1,.36,1) forwards;
+    }
+    @keyframes panel-reveal {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 28px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .panel-hdr-title {
+      font-family: var(--mono); font-size: 11px; font-weight: 600;
+      color: var(--tx3); letter-spacing: .15em; text-transform: uppercase;
+    }
+    .panel-hdr-badge {
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      padding: 3px 9px; border-radius: 6px; letter-spacing: .06em;
+      background: rgba(138,239,176,.1); color: var(--ok);
+      border: 1px solid rgba(138,239,176,.2);
+    }
+
+    /* ── Service rows ── */
+    .svc {
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      transition: background .2s;
+    }
+    .svc:last-child { border-bottom: none; }
+    .svc:hover { background: rgba(255,255,255,.013); }
+
+    .svc-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .svc-name {
+      font-size: 11px; font-weight: 700; letter-spacing: .11em;
+      text-transform: uppercase; color: var(--tx2);
+    }
+    .svc-badge {
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      padding: 3px 10px; border-radius: 6px; letter-spacing: .06em;
+      transition: background .3s, color .3s, border-color .3s;
+    }
+    .svc-badge.live {
+      background: rgba(138,239,176,.1); color: var(--ok);
+      border: 1px solid rgba(138,239,176,.22);
+    }
+    .svc-badge.offline {
+      background: rgba(255,149,149,.1); color: var(--err);
+      border: 1px solid rgba(255,149,149,.22);
+      animation: badge-pop .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes badge-pop {
+      0%   { transform: scale(.8); }
+      100% { transform: scale(1); }
+    }
+
+    .svc-input {
+      width: 100%; background: var(--bg2);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px; padding: 9px 13px;
+      color: var(--tx); font-family: var(--ui); font-size: 12px;
+      outline: none; transition: border-color .18s, box-shadow .18s;
+      box-sizing: border-box; margin-bottom: 10px;
+    }
+    .svc-input:focus {
+      border-color: rgba(157,229,255,.3);
+      box-shadow: 0 0 0 2px rgba(157,229,255,.06);
+    }
+    .svc-input::placeholder { color: var(--tx3); }
+
+    /* Confirm box — animates open/closed */
+    .confirm-box {
+      max-height: 0; overflow: hidden;
+      transition: max-height .35s cubic-bezier(.22,1,.36,1),
+                  opacity .25s ease, margin-bottom .25s ease;
+      opacity: 0; margin-bottom: 0;
+    }
+    .confirm-box.open {
+      max-height: 180px; opacity: 1; margin-bottom: 10px;
+    }
+    .confirm-inner {
+      background: var(--bg2);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 11px; padding: 13px 14px;
+      display: flex; flex-direction: column; gap: 9px;
+    }
+    .confirm-hint {
+      font-size: 11px; color: var(--tx3);
+    }
+    .confirm-inputs { display: flex; gap: 7px; flex-wrap: wrap; }
+    .confirm-input {
+      flex: 1; min-width: 90px;
+      background: var(--bg0);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; padding: 8px 11px;
+      color: var(--tx); font-family: var(--mono); font-size: 12px;
+      outline: none; transition: border-color .15s;
+    }
+    .confirm-input:focus { border-color: rgba(157,229,255,.4); }
+    .confirm-input.err {
+      border-color: var(--err);
+      animation: shake .35s ease;
+    }
+    .confirm-btns { display: flex; gap: 7px; }
+    .confirm-ok {
+      padding: 7px 15px; border-radius: 8px; border: none;
+      background: rgba(157,229,255,.1); color: var(--ac);
+      font-family: var(--ui); font-size: 12px; font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .18s cubic-bezier(.34,1.56,.64,1);
+    }
+    .confirm-ok:hover { background: rgba(157,229,255,.2); transform: translateY(-1px); }
+    .confirm-cancel {
+      padding: 7px 12px; border-radius: 8px; border: none;
+      background: transparent; color: var(--tx3);
+      font-family: var(--ui); font-size: 12px;
+      cursor: pointer; transition: color .15s;
+    }
+    .confirm-cancel:hover { color: var(--tx); }
+
+    .svc-actions { display: flex; gap: 8px; }
+    .svc-btn {
+      flex: 1; padding: 9px 14px; border-radius: 11px; border: none;
+      font-family: var(--ui); font-size: 12px; font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s, transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
+    }
+    .svc-btn:hover { opacity: .86; transform: translateY(-2px); }
+    .svc-btn:active { transform: scale(.96); }
+    .svc-btn.danger {
+      background: rgba(255,149,149,.12); color: var(--err);
+      border: 1px solid rgba(255,149,149,.22);
+    }
+    .svc-btn.danger:hover { box-shadow: 0 4px 18px rgba(255,149,149,.12); }
+    .svc-btn.safe {
+      background: rgba(138,239,176,.1); color: var(--ok);
+      border: 1px solid rgba(138,239,176,.2);
+    }
+    .svc-btn.safe:hover { box-shadow: 0 4px 18px rgba(138,239,176,.1); }
+    .svc-btn.hidden { display: none; }
+
+    /* Back link */
+    .back-link {
+      margin-top: 24px;
+      font-size: 12px; color: var(--tx3);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 6px;
+      transition: color .15s;
+      animation: fade-up .5s .3s cubic-bezier(.22,1,.36,1) both;
+    }
+    .back-link:hover { color: var(--tx2); }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      15% { transform: translateX(-6px); }
+      30% { transform: translateX(6px); }
+      45% { transform: translateX(-4px); }
+      60% { transform: translateX(4px); }
+      75% { transform: translateX(-2px); }
+      90% { transform: translateX(2px); }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-wave">WAVE</div>
+    <div class="logo-sub">Admin Panel</div>
+  </div>
+
+  <!-- Card -->
+  <div class="card">
+
+    <!-- Password screen -->
+    <div id="passScreen">
+      <div class="lock-wrap">
+        <div class="lock-ring-2"></div>
+        <div class="lock-ring"></div>
+        <div class="lock-icon"><i class="fas fa-lock"></i></div>
+      </div>
+      <div class="pass-title">Restricted Access</div>
+      <div class="pass-hint">Enter the admin password to access the control panel</div>
+      <div class="pass-row">
+        <input type="password" class="pass-input" id="passInput"
+          placeholder="Password"
+          onkeydown="if(event.key==='Enter')doUnlock()">
+        <button class="pass-btn" onclick="doUnlock()" title="Unlock">
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+      <div class="pass-err" id="passErr">Incorrect password — try again</div>
+    </div>
+
+    <!-- Admin panel (hidden until unlocked) -->
+    <div id="adminPanel">
+      <div class="panel-hdr">
+        <span class="panel-hdr-title">Control Panel</span>
+        <span class="panel-hdr-badge">AUTHENTICATED</span>
+      </div>
+
+      <!-- SITE -->
+      <div class="svc">
+        <div class="svc-top">
+          <span class="svc-name">Site</span>
+          <span class="svc-badge live" id="siteBadge">LIVE</span>
+        </div>
+        <input type="text" class="svc-input" id="siteRedirect" placeholder="Search term or URL (e.g. hello  or  https://example.com)">
+        <div class="confirm-box" id="siteConfirm">
+          <div class="confirm-inner">
+            <span class="confirm-hint" id="siteHint"></span>
+            <div class="confirm-inputs">
+              <input type="text" class="confirm-input" id="siteText" placeholder='Type "WAVE"'>
+              <input type="password" class="confirm-input" id="sitePass" placeholder="Password">
+            </div>
+            <div class="confirm-btns">
+              <button class="confirm-ok" onclick="doConfirm('site')">Confirm</button>
+              <button class="confirm-cancel" onclick="cancelConfirm('site')">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="svc-actions">
+          <button class="svc-btn danger" id="siteShut" onclick="showConfirm('site','shut')">Shut Down Site</button>
+          <button class="svc-btn safe hidden" id="siteOpen" onclick="showConfirm('site','open')">Open Site</button>
+        </div>
+      </div>
+
+      <!-- PROXY -->
+      <div class="svc">
+        <div class="svc-top">
+          <span class="svc-name">Proxy</span>
+          <span class="svc-badge live" id="proxyBadge">LIVE</span>
+        </div>
+        <input type="text" class="svc-input" id="proxyMsg" placeholder="Shutdown message (optional)">
+        <div class="confirm-box" id="proxyConfirm">
+          <div class="confirm-inner">
+            <span class="confirm-hint" id="proxyHint"></span>
+            <div class="confirm-inputs">
+              <input type="text" class="confirm-input" id="proxyText" placeholder='Type "PROXY"'>
+            </div>
+            <div class="confirm-btns">
+              <button class="confirm-ok" onclick="doConfirm('proxy')">Confirm</button>
+              <button class="confirm-cancel" onclick="cancelConfirm('proxy')">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="svc-actions">
+          <button class="svc-btn danger" id="proxyShut" onclick="showConfirm('proxy','shut')">Shut Down Proxy</button>
+          <button class="svc-btn safe hidden" id="proxyOpen" onclick="showConfirm('proxy','open')">Open Proxy</button>
+        </div>
+      </div>
+
+      <!-- AI -->
+      <div class="svc">
+        <div class="svc-top">
+          <span class="svc-name">AI</span>
+          <span class="svc-badge live" id="aiBadge">LIVE</span>
+        </div>
+        <input type="text" class="svc-input" id="aiMsg" placeholder="Shutdown message (optional)">
+        <div class="confirm-box" id="aiConfirm">
+          <div class="confirm-inner">
+            <span class="confirm-hint" id="aiHint"></span>
+            <div class="confirm-inputs">
+              <input type="text" class="confirm-input" id="aiText" placeholder='Type "AI"'>
+            </div>
+            <div class="confirm-btns">
+              <button class="confirm-ok" onclick="doConfirm('ai')">Confirm</button>
+              <button class="confirm-cancel" onclick="cancelConfirm('ai')">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="svc-actions">
+          <button class="svc-btn danger" id="aiShut" onclick="showConfirm('ai','shut')">Shut Down AI</button>
+          <button class="svc-btn safe hidden" id="aiOpen" onclick="showConfirm('ai','open')">Open AI</button>
+        </div>
+      </div>
+
+      <!-- SR -->
+      <div class="svc">
+        <div class="svc-top">
+          <span class="svc-name">SR</span>
+          <span class="svc-badge live" id="srBadge">LIVE</span>
+        </div>
+        <input type="text" class="svc-input" id="srMsg" placeholder="Shutdown message (optional)">
+        <div class="confirm-box" id="srConfirm">
+          <div class="confirm-inner">
+            <span class="confirm-hint" id="srHint"></span>
+            <div class="confirm-inputs">
+              <input type="text" class="confirm-input" id="srText" placeholder='Type "SR"'>
+            </div>
+            <div class="confirm-btns">
+              <button class="confirm-ok" onclick="doConfirm('sr')">Confirm</button>
+              <button class="confirm-cancel" onclick="cancelConfirm('sr')">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="svc-actions">
+          <button class="svc-btn danger" id="srShut" onclick="showConfirm('sr','shut')">Shut Down SR</button>
+          <button class="svc-btn safe hidden" id="srOpen" onclick="showConfirm('sr','open')">Open SR</button>
+        </div>
+      </div>
+
+    </div><!-- /adminPanel -->
+  </div><!-- /card -->
+
+  <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Back to Wave</a>
+</div>
+
+<script>
+  const PASS    = 'Rjs06-02!';
+  const pending = {};
+
+  // Load current maintenance state on page load
+  (async function init() {
+    try {
+      const res = await fetch('/api/admin/state');
+      if (res.ok) renderState(await res.json());
+    } catch {}
+  })();
+
+  function doUnlock() {
+    const input  = document.getElementById('passInput');
+    const errEl  = document.getElementById('passErr');
+    const screen = document.getElementById('passScreen');
+    if (input.value === PASS) {
+      errEl.classList.remove('show');
+      screen.classList.add('leaving');
+      setTimeout(function() {
+        screen.style.display = 'none';
+        document.getElementById('adminPanel').classList.add('visible');
+      }, 300);
+    } else {
+      input.classList.add('err');
+      input.value = '';
+      errEl.classList.add('show');
+      setTimeout(function() {
+        input.classList.remove('err');
+        input.focus();
+      }, 420);
+    }
+  }
+
+  function renderState(state) {
+    var svcs = ['site', 'proxy', 'ai', 'sr'];
+    for (var i = 0; i < svcs.length; i++) {
+      var svc     = svcs[i];
+      var enabled = !!(state[svc] && state[svc].enabled);
+      var badge   = document.getElementById(svc + 'Badge');
+      var shutBtn = document.getElementById(svc + 'Shut');
+      var openBtn = document.getElementById(svc + 'Open');
+      if (badge)   { badge.textContent = enabled ? 'OFFLINE' : 'LIVE'; badge.className = 'svc-badge ' + (enabled ? 'offline' : 'live'); }
+      if (shutBtn) { shutBtn.classList.toggle('hidden', enabled); }
+      if (openBtn) { openBtn.classList.toggle('hidden', !enabled); }
+      if (svc !== 'site') {
+        var msgEl = document.getElementById(svc + 'Msg');
+        if (msgEl) msgEl.value = (state[svc] && state[svc].message) || '';
+      } else {
+        var redEl = document.getElementById('siteRedirect');
+        if (redEl) redEl.value = (state.site && state.site.redirect) || 'https://google.com';
+      }
+    }
+  }
+
+  function showConfirm(svc, action) {
+    var svcs = ['site', 'proxy', 'ai', 'sr'];
+    for (var i = 0; i < svcs.length; i++) {
+      if (svcs[i] !== svc) cancelConfirm(svcs[i]);
+    }
+    pending[svc] = action;
+    var box    = document.getElementById(svc + 'Confirm');
+    var hint   = document.getElementById(svc + 'Hint');
+    var textEl = document.getElementById(svc + 'Text');
+    var key    = svc.toUpperCase();
+    hint.textContent = action === 'shut'
+      ? 'Type "' + key + '" to confirm shutdown'
+      : 'Type "' + key + '" to confirm reopening';
+    textEl.value = '';
+    if (svc === 'site') {
+      var p = document.getElementById('sitePass');
+      if (p) p.value = '';
+    }
+    box.classList.add('open');
+    setTimeout(function() { textEl.focus(); }, 80);
+  }
+
+  function cancelConfirm(svc) {
+    delete pending[svc];
+    var box = document.getElementById(svc + 'Confirm');
+    if (box) box.classList.remove('open');
+  }
+
+  async function doConfirm(svc) {
+    var action = pending[svc];
+    if (!action) return;
+    var textEl = document.getElementById(svc + 'Text');
+    if (!textEl) return;
+    if (textEl.value.trim().toUpperCase() !== svc.toUpperCase()) {
+      textEl.classList.add('err');
+      setTimeout(function() { textEl.classList.remove('err'); }, 420);
+      return;
+    }
+    if (svc === 'site') {
+      var passEl = document.getElementById('sitePass');
+      if (!passEl || passEl.value !== PASS) {
+        if (passEl) {
+          passEl.classList.add('err');
+          setTimeout(function() { passEl.classList.remove('err'); }, 420);
+        }
+        return;
+      }
+    }
+    var body = { password: PASS, service: svc, enabled: action === 'shut' };
+    if (svc !== 'site') {
+      var msgEl = document.getElementById(svc + 'Msg');
+      body.message = (msgEl && msgEl.value.trim()) || '';
+    } else {
+      var redEl = document.getElementById('siteRedirect');
+      body.redirect = (redEl && redEl.value.trim()) || 'https://google.com';
+    }
+    try {
+      var res  = await fetch('/api/admin/toggle', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      });
+      var data = await res.json();
+      if (!res.ok) { alert('Error: ' + (data.error || res.status)); return; }
+      cancelConfirm(svc);
+      renderState(data.state);
+    } catch (e) {
+      alert('Network error: ' + e.message);
+    }
+  }
+</script>
+</body>
+</html>
