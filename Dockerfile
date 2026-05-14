@@ -1,20 +1,13 @@
-FROM node:18-alpine
-
+FROM node:20-slim
 ENV NODE_ENV=production
-ARG NPM_BUILD="npm install --omit=dev"
 EXPOSE 8080/tcp
-
 LABEL maintainer="Mercury Workshop"
-LABEL summary="Scramjet Demo Image"
-LABEL description="Example application of Scramjet"
-
+RUN npm install -g pnpm
 WORKDIR /app
-
-COPY ["package.json", "package-lock.json", "./"]
-RUN apk add --upgrade --no-cache python3 make g++
-RUN $NPM_BUILD
-
+COPY ["package.json", "pnpm-lock.yaml", "./"]
+RUN apt-get update && apt-get install -y python3 make g++ && \
+    pnpm install --prod --frozen-lockfile && \
+    apt-get purge -y make g++ && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 COPY . .
-
 ENTRYPOINT [ "node" ]
 CMD ["src/index.js"]
